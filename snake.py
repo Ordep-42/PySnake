@@ -2,70 +2,69 @@ import pygame
 from pygame.locals import *
 from random import randrange
 
-def on_grid_random():
-    x = randrange(0, 591, 10)
-    y = randrange(0, 591, 10)
-    return (x, y)
-
-def collision(c1, c2):
-    return (c1[0] == c2[0]) and (c1[1] == c2[1])
-
-UP = 0
-RIGHT = 1
-DOWN = 2
-LEFT = 3
-
 pygame.init()
-screen = pygame.display.set_mode((600, 600))
+window = 600
+screen = pygame.display.set_mode([window] * 2)
 pygame.display.set_caption('Snake')
-
-snake = [(200, 200), (210, 200), (220, 200)]
-snake_skin = pygame.Surface((10, 10))
-snake_skin.fill((0, 255, 0)) #Green
-
-apple = pygame.Surface((10,10))
-apple.fill((255, 0, 0))
-apple_pos = on_grid_random()
-
-my_direction = LEFT
-
 clock = pygame.time.Clock()
 
+
+    
+tileSize = 20
+range = (tileSize // 2, window - tileSize // 2, tileSize)
+getRandomPosition = lambda: [randrange(*range), randrange(*range)]
+
+snake = pygame.rect.Rect([0, 0, tileSize - 1, tileSize - 1])
+snake.center = getRandomPosition()
+snakeLength = 3
+snakeSegments = [snake.copy()]
+snakeDirection = (0, 0)
+
+apple = snake.copy()
+apple.center = getRandomPosition()
+
+def gameStart():
+    global snakeLength, snakeDirection, snakeSegments
+    snake.center, apple.center = getRandomPosition(), getRandomPosition()
+    snakeLength, snakeDirection = 3, (0,0)
+    snakeSegments = [snake.copy()]
+
+directions = {pygame.K_UP: 1, pygame.K_DOWN: 1, pygame.K_LEFT: 1, pygame.K_RIGHT: 1}
+    
 while True:
-    clock.tick(20)
+    clock.tick(10)
+
     for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
-
-            if event.type == KEYDOWN:
-                if event.key == K_UP:
-                    my_direction = UP
-                if event.key == K_DOWN:
-                    my_direction = DOWN
-                if event.key == K_LEFT:
-                    my_direction = LEFT
-                if event.key == K_RIGHT:
-                    my_direction = RIGHT
-
-    if collision(snake[0], apple_pos):
-        apple_pos = on_grid_random()
-        snake.append((0,0))
-
-    for i in range(len(snake) - 1, 0, -1):
-        snake[i] = (snake[i-1][0], snake [i-1][1])
-
-    if my_direction == UP:
-        snake[0] = (snake[0][0], snake[0][1] - 10)
-    if my_direction == DOWN:
-        snake[0] = (snake[0][0], snake[0][1] + 10)
-    if my_direction == RIGHT:
-        snake[0] = (snake[0][0] + 10, snake[0][1])
-    if my_direction == LEFT:
-        snake[0] = (snake[0][0] - 10, snake[0][1])
-
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP and directions[pygame.K_UP]:
+                    snakeDirection = (0, -tileSize)
+                    directions = {pygame.K_UP: 1, pygame.K_DOWN: 0, pygame.K_LEFT: 1, pygame.K_RIGHT: 1}
+                if event.key == pygame.K_DOWN and directions[pygame.K_DOWN]:
+                    snakeDirection = (0, tileSize)
+                    directions = {pygame.K_UP: 0, pygame.K_DOWN: 1, pygame.K_LEFT: 1, pygame.K_RIGHT: 1}
+                if event.key == pygame.K_LEFT and directions[pygame.K_LEFT]:
+                    snakeDirection = (-tileSize, 0)
+                    directions = {pygame.K_UP: 1, pygame.K_DOWN: 1, pygame.K_LEFT: 1, pygame.K_RIGHT: 0}
+                if event.key == pygame.K_RIGHT and directions[pygame.K_RIGHT]:
+                    snakeDirection = (tileSize, 0)
+                    directions = {pygame.K_UP: 1, pygame.K_DOWN: 1, pygame.K_LEFT: 0, pygame.K_RIGHT: 1}
+                    
     screen.fill((0, 0, 0))
-    screen.blit(apple, apple_pos)
-    for pos in snake:
-        screen.blit(snake_skin, pos)
 
+    selfEating = pygame.Rect.collidelist(snake, snakeSegments[:-3]) != -1
+    if snake.top < 0 or snake.bottom > window or snake.left < 0 or snake.right > window or selfEating:
+        gameStart()
+
+    if snake.center == apple.center:
+        apple.center = getRandomPosition()
+        snakeLength += 1
+
+    [pygame.draw.rect(screen, 'green', segment) for segment in snakeSegments]
+    pygame.draw.rect(screen, 'red', apple)
+
+    snake.move_ip(snakeDirection)
+    snakeSegments.append(snake.copy())
+    snakeSegments = snakeSegments[-snakeLength:]
     pygame.display.update()
