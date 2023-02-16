@@ -9,8 +9,8 @@ pygame.display.set_caption('Snake')
 clock = pygame.time.Clock()
 #divide the play area into a grid
 tileSize = 20
-range = (tileSize // 2, window - tileSize // 2, tileSize)
-getRandomPosition = lambda: [randrange(*range), randrange(*range)]
+tileRange = (tileSize // 2, window - tileSize // 2, tileSize)
+getRandomPosition = lambda: [randrange(*tileRange), randrange(*tileRange)]
 #create snake
 snake = pygame.rect.Rect([0, 0, tileSize - 1, tileSize - 1])
 snake.center = getRandomPosition()
@@ -50,12 +50,20 @@ while True:
                     snakeDirection = (tileSize, 0)
                     directions = {pygame.K_UP: 1, pygame.K_DOWN: 1, pygame.K_LEFT: 0, pygame.K_RIGHT: 1}
                     
-    screen.fill((0, 0, 0)) #makes the background black
+    screen.fill((20, 20, 20)) #makes the background dark gray
     #check for snake colliding with itself
     selfEating = pygame.Rect.collidelist(snake, snakeSegments[:-3]) != -1
-    #restarts the game for self eating or out of bounds
-    if snake.top < 0 or snake.bottom > window or snake.left < 0 or snake.right > window or selfEating:
-        gameStart()
+    if selfEating: gameStart() #restarts the game for self eating
+
+    #if the snake goes out of bounds it reappears on the opposite side
+    if snake.y > 601:
+        snake.y = -19
+    if snake.y < -19:
+        snake.y = 601
+    if snake.x > 601:
+        snake.x = -19
+    if snake.x < -19:
+        snake.x = 601
 
     #eating mechanic
     if snake.center == apple.center:
